@@ -31,10 +31,22 @@ public class EscapingEdgesDecomposedPrecisionAlgorithm {
 
 	public EscapingEdgesDecomposedPrecisionResult apply(PluginContext context, PNRepResult alignments, AcceptingPetriNet net,
 			EscapingEdgesDecomposedPrecisionParameters parameters) throws IllegalTransitionException {
+		/*
+		 * Create a list of maps to store the relation between the main net and the subnets.
+		 */
 		List<Map<PetrinetNode, PetrinetNode>> parentChildMaps = new ArrayList<Map<PetrinetNode, PetrinetNode>>();
+		/*
+		 * Decompose the nets, and fill the map just created as a side effect.
+		 */
 		AcceptingPetriNetArray nets = getNets(context, alignments, net, parameters, parentChildMaps);
 		context.getProvidedObjectManager().createProvidedObject("Precision Decomposition", nets, AcceptingPetriNetArray.class, context);
+		/*
+		 * Decompose the alignments using the map just created.
+		 */
 		List<PNRepResult> alignmentArray = getAlignments(alignments, nets, parameters, parentChildMaps);
+		/*
+		 * Compute the precision metric for every subnet-subalignment combination.
+		 */
 		EscapingEdgesDecomposedPrecisionResult result = new EscapingEdgesDecomposedPrecisionResult();
 		EscapingEdgesPrecisionAlgorithm precisionAlgorithm = new EscapingEdgesPrecisionAlgorithm();
 		double weightedExecuted = 0.0;
@@ -45,6 +57,9 @@ public class EscapingEdgesDecomposedPrecisionAlgorithm {
 			weightedAvailable += subResults.getWeightedAvailable();
 			System.out.println("EscapingEdgesDecomposedPrecisionAlgorithm] Precision = " + subResults.getPrecision());
 		}
+		/*
+		 * Set the results for the main net and the main alignment obtained through decomposed computation of precision.
+		 */
 		result.setWeightedExecuted(weightedExecuted);
 		result.setWeightedAvailable(weightedAvailable);
 		result.setPrecision(weightedExecuted/weightedAvailable);
@@ -54,6 +69,10 @@ public class EscapingEdgesDecomposedPrecisionAlgorithm {
 	private AcceptingPetriNetArray getNets(PluginContext context, PNRepResult alignments, AcceptingPetriNet net,
 			EscapingEdgesDecomposedPrecisionParameters parameters, List<Map<PetrinetNode, PetrinetNode>> parentChildMaps) {
 
+		/*
+		 * To decompose the net, we need to have a set of activities and a tec-mapping. These are constructed first from the alignment.
+		 * Note that we assume that a transition with label "X" is mapped onto an activity "X".
+		 */
 		Map<String, XEventClass> activities = new HashMap<String, XEventClass>();
 		TransEvClassMapping mapping = new TransEvClassMapping(XUtils.STANDARDCLASSIFIER, XUtils.INVISIBLEACTIVITY);
 		for (SyncReplayResult alignment : alignments) {
@@ -79,6 +98,9 @@ public class EscapingEdgesDecomposedPrecisionAlgorithm {
 				}
 			}
 		}
+		/*
+		 * Create the decomposer, and set its parameters.
+		 */
 		DecomposeAcceptingPetriNetUsingActivityClusterArrayAlgorithm decomposer = new DecomposeAcceptingPetriNetUsingActivityClusterArrayAlgorithm();
 		DecomposeAcceptingPetriNetUsingActivityClusterArrayParameters decomposerParameters = new DecomposeAcceptingPetriNetUsingActivityClusterArrayParameters(
 				net, new HashSet<XEventClass>(activities.values()), XUtils.STANDARDCLASSIFIER);
@@ -86,17 +108,28 @@ public class EscapingEdgesDecomposedPrecisionAlgorithm {
 		decomposerParameters.setInvisibleActivity(XUtils.INVISIBLEACTIVITY);
 		decomposerParameters.setMapping(mapping);
 		decomposerParameters.setUnsplittableActivities(parameters.getUnsplittableActivities());
+		/*
+		 * Run the decomposer with these parameters.
+		 */
 		return decomposer.apply(context, net, null, decomposerParameters, parentChildMaps);
 	}
 
 	private List<PNRepResult> getAlignments(PNRepResult alignments, AcceptingPetriNetArray nets,
 			EscapingEdgesDecomposedPrecisionParameters parameters, List<Map<PetrinetNode, PetrinetNode>> parentChildMaps) {
+		/*
+		 * Create an empty list with subalignments.
+		 */
 		List<PNRepResult> subAlignmentArray = new ArrayList<PNRepResult>();
 		for (int i = 0; i < nets.getSize(); i++) {
-			AcceptingPetriNet net = nets.getNet(i);
+			/*
+			 * Add subalignments to this list for every subnet.
+			 */
 			Map<PetrinetNode, PetrinetNode> parentChildMap = parentChildMaps.get(i);
 			Set<SyncReplayResult> subAlignments = new HashSet<SyncReplayResult>();
 			for (SyncReplayResult alignment : alignments) {
+				/*
+				 * Filter the alignment into a subalignment for this subnet.
+				 */
 				List<Object> subNodeInstances = new ArrayList<Object>();
 				List<StepTypes> subStepTypes = new ArrayList<StepTypes>();
 				for (int j = 0; j < alignment.getStepTypes().size(); j++) {
@@ -115,6 +148,9 @@ public class EscapingEdgesDecomposedPrecisionAlgorithm {
 						}
 					}
 				}
+				/*
+				 * Add the subalignment as many times as there were traces linked ot the alignment.
+				 */
 				for (int traceIndex : alignment.getTraceIndex()) {
 					SyncReplayResult subAlignment = new SyncReplayResult(subNodeInstances, subStepTypes, traceIndex);
 					subAlignment.setReliable(alignment.isReliable());
