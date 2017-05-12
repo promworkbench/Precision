@@ -7,7 +7,7 @@ public class EscapingEdgesPrecisionResult {
 	private double weightedExecuted;
 	private double weightedAvailable;
 
-	public double getWeigtedExecuted() {
+	public double getWeightedExecuted() {
 		return weightedExecuted;
 	}
 

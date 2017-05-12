@@ -16,7 +16,7 @@ import org.processmining.precision.models.EscapingEdgesPrecisionResult;
 import org.processmining.precision.parameters.EscapingEdgesPrecisionParameters;
 
 
-@Plugin(name = "Check Precision usign Escaping Edges", 
+@Plugin(name = "Check Precision using Escaping Edges", 
 		categories = { PluginCategory.ConformanceChecking }, 
 		level = PluginLevel.PeerReviewed, 
 		parameterLabels = { "Alignments", "Accepting Petri net","Parameters" }, 

@@ -300,7 +300,9 @@ public class EscapingEdgesPrecisionAlgorithm {
 			if (traceAlignment.isReliable()) {
 				// only go through alignments that are reliable
 				List<String> modelTrace = getModelTrace(traceAlignment);
-				buildAutomaton(modelTrace, automaton);
+				for (int index : traceAlignment.getTraceIndex()) {
+					buildAutomaton(modelTrace, automaton);
+				}
 			}
 		}
 		
