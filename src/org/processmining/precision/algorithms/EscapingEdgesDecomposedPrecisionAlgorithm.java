@@ -13,6 +13,9 @@ import org.processmining.acceptingpetrinet.models.AcceptingPetriNetArray;
 import org.processmining.acceptingpetrinetdecomposer.algorithms.DecomposeAcceptingPetriNetUsingActivityClusterArrayAlgorithm;
 import org.processmining.acceptingpetrinetdecomposer.parameters.DecomposeAcceptingPetriNetUsingActivityClusterArrayParameters;
 import org.processmining.acceptingpetrinetdecomposer.strategies.impl.DecompositionGenericHundredStrategy;
+import org.processmining.activityclusterarray.models.ActivityClusterArray;
+import org.processmining.activityclusterarrayextractor.algorithms.ExtractActivityClusterArrayFromAcceptingPetriNetArrayAlgorithm;
+import org.processmining.activityclusterarrayextractor.parameters.ExtractActivityClusterArrayFromAcceptingPetriNetArrayParameters;
 import org.processmining.framework.plugin.PluginContext;
 import org.processmining.log.utils.XUtils;
 import org.processmining.models.graphbased.directed.petrinet.PetrinetNode;
@@ -39,7 +42,7 @@ public class EscapingEdgesDecomposedPrecisionAlgorithm {
 		 * Decompose the nets, and fill the map just created as a side effect.
 		 */
 		AcceptingPetriNetArray nets = getNets(context, alignments, net, parameters, parentChildMaps);
-		context.getProvidedObjectManager().createProvidedObject("Precision Decomposition", nets, AcceptingPetriNetArray.class, context);
+		context.getProvidedObjectManager().createProvidedObject("Final Precision Decomposition", nets, AcceptingPetriNetArray.class, context);
 		/*
 		 * Decompose the alignments using the map just created.
 		 */
@@ -99,7 +102,7 @@ public class EscapingEdgesDecomposedPrecisionAlgorithm {
 			}
 		}
 		/*
-		 * Create the decomposer, and set its parameters.
+		 * Create the decomposer, and set its parameters for an initial decomposition.
 		 */
 		DecomposeAcceptingPetriNetUsingActivityClusterArrayAlgorithm decomposer = new DecomposeAcceptingPetriNetUsingActivityClusterArrayAlgorithm();
 		DecomposeAcceptingPetriNetUsingActivityClusterArrayParameters decomposerParameters = new DecomposeAcceptingPetriNetUsingActivityClusterArrayParameters(
@@ -107,11 +110,27 @@ public class EscapingEdgesDecomposedPrecisionAlgorithm {
 		decomposerParameters.setStrategy(DecompositionGenericHundredStrategy.NAME);
 		decomposerParameters.setInvisibleActivity(XUtils.INVISIBLEACTIVITY);
 		decomposerParameters.setMapping(mapping);
-		decomposerParameters.setUnsplittableActivities(parameters.getUnsplittableActivities());
+		decomposerParameters.setUnsplittableActivities(parameters.getUnsplittableActivities());	
+		AcceptingPetriNetArray genericNets = decomposer.apply(context, net, null, decomposerParameters, parentChildMaps);
+		context.getProvidedObjectManager().createProvidedObject("Initial Precision Decomposition", genericNets, AcceptingPetriNetArray.class, context);
+
 		/*
-		 * Run the decomposer with these parameters.
+		 * Create the clusters from this decomposaition.
 		 */
-		return decomposer.apply(context, net, null, decomposerParameters, parentChildMaps);
+		ExtractActivityClusterArrayFromAcceptingPetriNetArrayAlgorithm extractor = new ExtractActivityClusterArrayFromAcceptingPetriNetArrayAlgorithm();
+		ExtractActivityClusterArrayFromAcceptingPetriNetArrayParameters extractorParameters = new ExtractActivityClusterArrayFromAcceptingPetriNetArrayParameters(genericNets, new HashSet<XEventClass>(activities.values()));
+		extractorParameters.setMapping(mapping);
+		extractorParameters.setInvisibleActivity(XUtils.INVISIBLEACTIVITY);
+		extractorParameters.setIOAware(true);
+		ActivityClusterArray clusters = extractor.apply(context, genericNets, extractorParameters);
+		context.getProvidedObjectManager().createProvidedObject("Clusters for Precision Decomposition", clusters, ActivityClusterArray.class, context);
+		
+		/*
+		 * Run the selected decomposer on these clusters.
+		 */
+		parentChildMaps.clear();
+		decomposerParameters.setStrategy(parameters.getStrategy());
+		return decomposer.apply(context, net, clusters, decomposerParameters, parentChildMaps);
 	}
 
 	private List<PNRepResult> getAlignments(PNRepResult alignments, AcceptingPetriNetArray nets,
@@ -138,8 +157,13 @@ public class EscapingEdgesDecomposedPrecisionAlgorithm {
 						case MINVI :
 						case LMGOOD : {
 							if (parentChildMap.containsKey(alignment.getNodeInstance().get(j))) {
-								subStepTypes.add(alignment.getStepTypes().get(j));
-								subNodeInstances.add(parentChildMap.get(alignment.getNodeInstance().get(j)));
+								Transition transition = (Transition) parentChildMap.get(alignment.getNodeInstance().get(j));
+								if (transition.isInvisible()) {
+									subStepTypes.add(StepTypes.MINVI);
+								} else {
+									subStepTypes.add(alignment.getStepTypes().get(j));
+								}
+								subNodeInstances.add(transition);
 							}
 							break;
 						}

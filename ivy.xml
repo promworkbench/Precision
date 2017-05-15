@@ -18,6 +18,7 @@
     	<dependency org="prom" name="Widgets" rev="latest" changing="true" transitive="true" />
     	<dependency org="prom" name="AcceptingPetriNet" rev="latest" changing="true" transitive="true" />
     	<dependency org="prom" name="AcceptingPetriNetDecomposer" rev="latest" changing="true" transitive="true" />
+     	<dependency org="prom" name="ActivityClusterArrayExtractor" rev="latest" changing="true" transitive="true" />
     	<dependency org="prom" name="PNetReplayer" rev="latest" changing="true" transitive="true" />
     	<!-- Third party libraries. These may span multiple lines. -->
     	<!-- Please uncomment the second line in the resolve target in your build.xml file

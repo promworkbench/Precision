@@ -18,6 +18,9 @@ import javax.swing.event.ListSelectionListener;
 
 import org.deckfour.xes.classification.XEventClass;
 import org.processmining.acceptingpetrinet.models.AcceptingPetriNet;
+import org.processmining.acceptingpetrinetdecomposer.strategies.DecompositionStrategy;
+import org.processmining.acceptingpetrinetdecomposer.strategies.DecompositionStrategyManager;
+import org.processmining.acceptingpetrinetdecomposer.strategies.impl.DecompositionReplaceReduceStrategy;
 import org.processmining.framework.plugin.PluginContext;
 import org.processmining.framework.util.ui.widgets.ProMList;
 import org.processmining.models.graphbased.directed.petrinet.elements.Transition;
@@ -37,7 +40,7 @@ public class EscapingEdgesDecomposedPrecisionDialog extends JPanel {
 		removeAll();
 
 		if (n == 0) {
-			double size[][] = { { TableLayoutConstants.FILL }, { TableLayoutConstants.FILL } };
+			double size[][] = { { TableLayoutConstants.FILL, TableLayoutConstants.FILL }, { TableLayoutConstants.FILL } };
 			setLayout(new TableLayout(size));
 
 			setOpaque(false);
@@ -47,12 +50,12 @@ public class EscapingEdgesDecomposedPrecisionDialog extends JPanel {
 			List<XEventClass> activityList = new ArrayList<XEventClass>();
 			activityList.addAll(activities);
 			Collections.sort(activityList);
-			DefaultListModel<XEventClass> listModel = new DefaultListModel<XEventClass>();
+			DefaultListModel<XEventClass> activityListModel = new DefaultListModel<XEventClass>();
 			for (XEventClass activity : activityList) {
-				listModel.addElement(activity);
+				activityListModel.addElement(activity);
 			}
-			final ProMList<XEventClass> list = new ProMList<XEventClass>("Select decomposable activities", listModel);
-			list.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+			final ProMList<XEventClass> aList = new ProMList<XEventClass>("Select decomposable activities", activityListModel);
+			aList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
 
 //			AcceptingPetriNet seseNet = (new SESEAlgorithm()).apply(context, net);
 //			Collection<XEventClass> seseActivities = new HashSet<XEventClass>();
@@ -65,27 +68,60 @@ public class EscapingEdgesDecomposedPrecisionDialog extends JPanel {
 
 			// Preselect all, to retain old behavior if no action is taken here.
 //			int[] indices = new int[seseActivities.size()];
-			int[] indices = new int[listModel.getSize()];
+			int[] indices = new int[activityListModel.getSize()];
 			int j = 0;
-			for (int i = 0; i < listModel.getSize(); i++) {
+			for (int i = 0; i < activityListModel.getSize(); i++) {
 //				if (seseActivities.contains(listModel.get(i))) {
 					indices[j++] = i;
 				}
 //			}
-			list.setSelectedIndices(indices);
+			aList.setSelectedIndices(indices);
 			Set<XEventClass> unsplittableActivities = new HashSet<XEventClass>(activities);
-			unsplittableActivities.removeAll(list.getSelectedValuesList());
+			unsplittableActivities.removeAll(aList.getSelectedValuesList());
 			parameters.setUnsplittableActivities(unsplittableActivities);
-			list.addListSelectionListener(new ListSelectionListener() {
+			aList.addListSelectionListener(new ListSelectionListener() {
 				public void valueChanged(ListSelectionEvent e) {
 					Set<XEventClass> unsplittableActivities = new HashSet<XEventClass>(activities);
-					unsplittableActivities.removeAll(list.getSelectedValuesList());
+					unsplittableActivities.removeAll(aList.getSelectedValuesList());
 					System.out.println("[DecomposedPrecisionDialog] Unsplittable = " + unsplittableActivities);
 					parameters.setUnsplittableActivities(unsplittableActivities);
 				}
 			});
+			aList.setPreferredSize(new Dimension(100, 100));
+			add(aList, "1, 0");
+
+			DefaultListModel<String> listModel = new DefaultListModel<String>();
+			for (DecompositionStrategy strategy : DecompositionStrategyManager.getInstance().getStrategies()) {
+				/*
+				 * Reduction strategy poses problems for this decomposed precision strategy. The main question is,
+				 * which transitions to filter in while filtering a monolithic alignment onto a subnet. 
+				 */
+				if (!strategy.getName().equals(DecompositionReplaceReduceStrategy.NAME)) {
+					listModel.addElement(strategy.getName());
+				}
+			}
+			final ProMList<String> list = new ProMList<String>("Select decomposition strategy", listModel);
+			list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+			final String defaultStrategy = parameters.getStrategy();
+			list.setSelection(defaultStrategy);
+			list.addListSelectionListener(new ListSelectionListener() {
+				public void valueChanged(ListSelectionEvent e) {
+					List<String> selected = list.getSelectedValuesList();
+					if (selected.size() == 1) {
+						parameters.setStrategy(selected.get(0));
+					} else {
+						/*
+						 * Nothing selected. Revert to selection of default
+						 * classifier.
+						 */
+						list.setSelection(defaultStrategy);
+						parameters.setStrategy(defaultStrategy);
+					}
+				}
+			});
 			list.setPreferredSize(new Dimension(100, 100));
 			add(list, "0, 0");
+
 		}
 
 		return this;
