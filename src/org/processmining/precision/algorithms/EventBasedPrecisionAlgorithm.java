@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.deckfour.xes.classification.XEventClass;
 import org.processmining.acceptingpetrinet.models.AcceptingPetriNet;
 import org.processmining.framework.plugin.PluginContext;
 import org.processmining.models.graphbased.directed.petrinet.elements.Transition;
@@ -61,7 +62,7 @@ public class EventBasedPrecisionAlgorithm {
 					parameters.getSemantics().setCurrentState(state);
 					parameters.getSemantics().executeExecutableTransition(transition);
 					state = new Marking(parameters.getSemantics().getCurrentState());
-					hist.add(transition.getLabel());
+//					hist.add(transition.getLabel());
 					break;
 				}
 				case LMGOOD : {
@@ -76,16 +77,17 @@ public class EventBasedPrecisionAlgorithm {
 				}
 				case MINVI : {
 					Transition transition = (Transition) nodeInstance;
+					enM.get(hist).addAll(getEnabledActivities(state, new HashSet<Transition>(), parameters));
 					parameters.getSemantics().setCurrentState(state);
 					parameters.getSemantics().executeExecutableTransition(transition);
 					state = new Marking(parameters.getSemantics().getCurrentState());
 					break;
 				}
 				case L : {
-//					XEventClass activity = (XEventClass) nodeInstance;
-//					enL.get(hist).add(activity.getId());
-//					enM.get(hist).addAll(getEnabledActivities(state, new HashSet<Transition>(), parameters));
-//					hist.add(activity.getId());
+					XEventClass activity = (XEventClass) nodeInstance;
+					//					enL.get(hist).add(activity.getId());
+					//					enM.get(hist).addAll(getEnabledActivities(state, new HashSet<Transition>(), parameters));
+					hist.add(activity.getId());
 					break;
 				}
 				default :
@@ -97,7 +99,8 @@ public class EventBasedPrecisionAlgorithm {
 			EventBasedPrecisionParameters parameters) throws IllegalTransitionException {
 		Set<String> activities = new HashSet<String>();
 		parameters.getSemantics().setCurrentState(state);
-		for (Transition transition : parameters.getSemantics().getExecutableTransitions()) {
+		Set<Transition> executableTransitions = new HashSet<Transition>(parameters.getSemantics().getExecutableTransitions());
+		for (Transition transition : executableTransitions) {
 			if (!transitions.contains(transitions)) {
 				transitions.add(transition);
 				if (transition.isInvisible()) {
@@ -124,10 +127,16 @@ public class EventBasedPrecisionAlgorithm {
 			StepTypes stepType = alignment.getStepTypes().get(i);
 			Object nodeInstance = alignment.getNodeInstance().get(i);
 
-			precision.addNofEvents(n);
-			System.out.println("[EventBasedPrecisionAlgorithm] Hist = " + hist + ", enL = " + enL.get(hist) + ", enM = " + enM.get(hist));
-			precision.addSumPrecision(n * (((double) enL.get(hist).size()) / enM.get(hist).size()));
-			System.out.println("[EventBasedPrecisionAlgorithm] NofEvents = " + precision.getNofEvents() + ", SumPrecision = " + precision.getSumPrecision());
+			if ((stepType == StepTypes.L || stepType == StepTypes.LMGOOD) && enM.get(hist).size() > 0) {
+				precision.addNofEvents(n);
+				precision.addSumPrecision(n * (((double) enL.get(hist).size()) / enM.get(hist).size()));
+				if (!enL.get(hist).equals(enM.get(hist))) {
+					System.out.println("[EventBasedPrecisionAlgorithm] Hist = " + hist + ", enL = " + enL.get(hist)
+							+ ", enM = " + enM.get(hist));
+					System.out.println("[EventBasedPrecisionAlgorithm] NofEvents = " + precision.getNofEvents()
+							+ ", SumPrecision = " + precision.getSumPrecision());
+				}
+			}
 
 			switch (stepType) {
 				case MREAL : {
@@ -135,7 +144,7 @@ public class EventBasedPrecisionAlgorithm {
 					parameters.getSemantics().setCurrentState(state);
 					parameters.getSemantics().executeExecutableTransition(transition);
 					state = new Marking(parameters.getSemantics().getCurrentState());
-					hist.add(transition.getLabel());
+//					hist.add(transition.getLabel());
 					break;
 				}
 				case LMGOOD : {
@@ -154,8 +163,8 @@ public class EventBasedPrecisionAlgorithm {
 					break;
 				}
 				case L : {
-//					XEventClass activity = (XEventClass) nodeInstance;
-//					hist.add(activity.getId());
+					XEventClass activity = (XEventClass) nodeInstance;
+					hist.add(activity.getId());
 					break;
 				}
 				default :
