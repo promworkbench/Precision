@@ -30,9 +30,14 @@ public class EventBasedPrecisionAlgorithm {
 	 */
 	private Map<List<String>, Set<String>> enM;
 	/*
-	 * Mapping from state in the net to set of enabled activities. Used as cache.
+	 * Mapping from state in the net to set of enabled activities. Used as
+	 * cache.
 	 */
 	private Map<Marking, Set<String>> enA;
+	/*
+	 * The resulting precision.
+	 */
+	private EventBasedPrecision precision;
 
 	public EventBasedPrecisionAlgorithm() {
 		/*
@@ -41,16 +46,16 @@ public class EventBasedPrecisionAlgorithm {
 		enL = new HashMap<List<String>, Set<String>>();
 		enM = new HashMap<List<String>, Set<String>>();
 		enA = new HashMap<Marking, Set<String>>();
+		precision = new EventBasedPrecision();
 	}
 
 	/*
-	 * Get the event-based precision given the alignments and the net (apn). ssumption is that the net
-	 * was used to create the alignments (the transitions in the alignments should be transitions from
-	 * this net).
+	 * Get the event-based precision given the alignments and the net (apn).
+	 * ssumption is that the net was used to create the alignments (the
+	 * transitions in the alignments should be transitions from this net).
 	 */
 	public EventBasedPrecision apply(PluginContext context, PNRepResult alignments, AcceptingPetriNet apn,
 			EventBasedPrecisionParameters parameters) throws IllegalTransitionException {
-		EventBasedPrecision precision = new EventBasedPrecision();
 		/*
 		 * First, construct enL en enM.
 		 */
@@ -58,10 +63,10 @@ public class EventBasedPrecisionAlgorithm {
 			apply(context, alignment, apn, parameters);
 		}
 		/*
-		 * Second, compute precision based on constructed enL en enM. 
+		 * Second, compute precision based on constructed enL en enM.
 		 */
 		for (SyncReplayResult alignment : alignments) {
-			apply(context, alignment, precision);
+			apply(context, alignment);
 		}
 		/*
 		 * Return precision.
@@ -101,7 +106,8 @@ public class EventBasedPrecisionAlgorithm {
 				case MREAL : {
 					Transition transition = (Transition) nodeInstance;
 					/*
-					 * From the current history, the log can do the activity associated with this transition.
+					 * From the current history, the log can do the activity
+					 * associated with this transition.
 					 */
 					enL.get(hist).add(transition.getLabel());
 					/*
@@ -119,7 +125,8 @@ public class EventBasedPrecisionAlgorithm {
 				case LMGOOD : {
 					Transition transition = (Transition) nodeInstance;
 					/*
-					 * From the current history, the log can do the activity associated with this transition.
+					 * From the current history, the log can do the activity
+					 * associated with this transition.
 					 */
 					enL.get(hist).add(transition.getLabel());
 					/*
@@ -168,7 +175,7 @@ public class EventBasedPrecisionAlgorithm {
 	/*
 	 * Get the enabled activities form the given state.
 	 */
-	private Set<String> getEnabledActivities(Marking state, Set<Transition> transitions,
+	private Set<String> getEnabledActivities(Marking state, Set<Transition> transitions, 
 			EventBasedPrecisionParameters parameters) throws IllegalTransitionException {
 		/*
 		 * Check cache.
@@ -207,7 +214,8 @@ public class EventBasedPrecisionAlgorithm {
 					 */
 					parameters.getSemantics().executeExecutableTransition(transition);
 					/*
-					 * Add all activities enabled from the state after this silent transition has been executed.
+					 * Add all activities enabled from the state after this
+					 * silent transition has been executed.
 					 */
 					activities.addAll(getEnabledActivities(new Marking(parameters.getSemantics().getCurrentState()),
 							transitions, parameters));
@@ -223,7 +231,7 @@ public class EventBasedPrecisionAlgorithm {
 				}
 			}
 		}
-		System.out.println("[EventBasedPrecisionAlgorithm] State = " + state + ", activities = " + activities);
+		precision.addInfo("State = " + state + ", activities = " + activities);
 		/*
 		 * Cache the result.
 		 */
@@ -237,7 +245,7 @@ public class EventBasedPrecisionAlgorithm {
 	/*
 	 * Given enL and enM, extend the precision with the given alignment.
 	 */
-	private void apply(PluginContext context, SyncReplayResult alignment, EventBasedPrecision precision) {
+	private void apply(PluginContext context, SyncReplayResult alignment) {
 		/*
 		 * History is initally empty.
 		 */
@@ -259,21 +267,23 @@ public class EventBasedPrecisionAlgorithm {
 			 */
 			if ((stepType == StepTypes.L || stepType == StepTypes.LMGOOD) && enM.get(hist).size() > 0) {
 				/*
-				 * Add as amny events to the precision as there were traces corresponding to this alignment.
+				 * Add as amny events to the precision as there were traces
+				 * corresponding to this alignment.
 				 */
 				precision.addNofEvents(n);
 				/*
-				 * Extend the precision in a similar way. By definition of the precision.
+				 * Extend the precision in a similar way. By definition of the
+				 * precision.
 				 */
 				precision.addSumPrecision(n * (((double) enL.get(hist).size()) / enM.get(hist).size()));
 				/*
-				 * Output mismatches, that is, if precision drops. Could be useful diagnostic information.
+				 * Output mismatches, that is, if precision drops. Could be
+				 * useful diagnostic information.
 				 */
 				if (!enL.get(hist).equals(enM.get(hist))) {
-					System.out.println("[EventBasedPrecisionAlgorithm] Hist = " + hist + ", enL = " + enL.get(hist)
-							+ ", enM = " + enM.get(hist));
-					System.out.println("[EventBasedPrecisionAlgorithm] NofEvents = " + precision.getNofEvents()
-							+ ", SumPrecision = " + precision.getSumPrecision());
+					precision.addInfo("Hist = " + hist + ", enL = " + enL.get(hist) + ", enM = " + enM.get(hist));
+					precision.addInfo("NofEvents = " + precision.getNofEvents() + ", SumPrecision = "
+							+ precision.getSumPrecision());
 				}
 			}
 
