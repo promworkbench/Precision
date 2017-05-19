@@ -175,7 +175,7 @@ public class EventBasedPrecisionAlgorithm {
 	/*
 	 * Get the enabled activities form the given state.
 	 */
-	private Set<String> getEnabledActivities(Marking state, Set<Transition> transitions, 
+	private Set<String> getEnabledActivities(Marking state, Set<Transition> transitions,
 			EventBasedPrecisionParameters parameters) throws IllegalTransitionException {
 		/*
 		 * Check cache.
@@ -275,15 +275,15 @@ public class EventBasedPrecisionAlgorithm {
 				 * Extend the precision in a similar way. By definition of the
 				 * precision.
 				 */
-				precision.addSumPrecision(n * (((double) enL.get(hist).size()) / enM.get(hist).size()));
+				double eventPrecision = n * (((double) enL.get(hist).size()) / enM.get(hist).size());
+				precision.addSumPrecision(eventPrecision);
 				/*
 				 * Output mismatches, that is, if precision drops. Could be
 				 * useful diagnostic information.
 				 */
 				if (!enL.get(hist).equals(enM.get(hist))) {
-					precision.addInfo("Hist = " + hist + ", enL = " + enL.get(hist) + ", enM = " + enM.get(hist));
-					precision.addInfo("NofEvents = " + precision.getNofEvents() + ", SumPrecision = "
-							+ precision.getSumPrecision());
+					precision.addInfo("History = " + hist + ", enL = " + enL.get(hist) + ", enM = " + enM.get(hist));
+					precision.addInfo("Number of Events = " + n + ", Precision for Events = " + eventPrecision);
 				}
 			}
 
