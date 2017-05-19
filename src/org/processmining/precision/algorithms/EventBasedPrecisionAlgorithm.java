@@ -231,7 +231,7 @@ public class EventBasedPrecisionAlgorithm {
 				}
 			}
 		}
-		precision.addInfo("State = " + state + ", activities = " + activities);
+		precision.addInfo("State = " + state + ", Enabled Activities = " + activities);
 		/*
 		 * Cache the result.
 		 */
@@ -283,7 +283,7 @@ public class EventBasedPrecisionAlgorithm {
 				 */
 				if (!enL.get(hist).equals(enM.get(hist))) {
 					precision.addInfo("History = " + hist + ", enL = " + enL.get(hist) + ", enM = " + enM.get(hist));
-					precision.addInfo("Number of Events = " + n + ", Precision for Events = " + eventPrecision);
+					precision.addInfo("Number of Events = " + n + ", Accumulated Precision for Events = " + eventPrecision);
 				}
 			}
 
