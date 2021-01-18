@@ -206,7 +206,7 @@ public class EventBasedPrecisionAlgorithm {
 			/*
 			 * Cycle check
 			 */
-			if (!transitions.contains(transitions)) {
+			if (!transitions.contains(transition)) {
 				transitions.add(transition);
 				if (transition.isInvisible()) {
 					/*
