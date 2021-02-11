@@ -66,7 +66,7 @@ public class EventBasedPrecisionAlgorithm {
 		 * Second, compute precision based on constructed enL en enM.
 		 */
 		for (SyncReplayResult alignment : alignments) {
-			apply(context, alignment);
+			apply(context, alignment, parameters);
 		}
 		/*
 		 * Return precision.
@@ -231,7 +231,9 @@ public class EventBasedPrecisionAlgorithm {
 				}
 			}
 		}
-		precision.addInfo("State = " + state + ", Enabled Activities = " + activities);
+		if (parameters.isShowInfo()) {
+			precision.addInfo("State = " + state + ", Enabled Activities = " + activities);
+		}
 		/*
 		 * Cache the result.
 		 */
@@ -245,7 +247,7 @@ public class EventBasedPrecisionAlgorithm {
 	/*
 	 * Given enL and enM, extend the precision with the given alignment.
 	 */
-	private void apply(PluginContext context, SyncReplayResult alignment) {
+	private void apply(PluginContext context, SyncReplayResult alignment, EventBasedPrecisionParameters parameters) {
 		/*
 		 * History is initally empty.
 		 */
@@ -281,7 +283,7 @@ public class EventBasedPrecisionAlgorithm {
 				 * Output mismatches, that is, if precision drops. Could be
 				 * useful diagnostic information.
 				 */
-				if (!enL.get(hist).equals(enM.get(hist))) {
+				if (parameters.isShowInfo() && !enL.get(hist).equals(enM.get(hist))) {
 					precision.addInfo("History = " + hist + ", enL = " + enL.get(hist) + ", enM = " + enM.get(hist));
 					precision.addInfo("Number of Events = " + n + ", Accumulated Precision for Events = " + eventPrecision);
 				}

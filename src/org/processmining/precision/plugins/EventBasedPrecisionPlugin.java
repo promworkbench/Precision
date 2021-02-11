@@ -25,6 +25,14 @@ public class EventBasedPrecisionPlugin extends EventBasedPrecisionAlgorithm {
 		return runParameters(context, alignments, net, parameters);
 	}
 
+	@UITopiaVariant(affiliation = UITopiaVariant.EHV, author = "H.M.W. Verbeek", email = "h.m.w.verbeek@tue.nl")
+	@PluginVariant(variantLabel = "Check Event-based Precision, No info", requiredParameterLabels = { 0, 1 })
+	public EventBasedPrecision runNoInfo(PluginContext context, PNRepResult alignments, AcceptingPetriNet net) throws IllegalTransitionException {
+		EventBasedPrecisionParameters parameters = new EventBasedPrecisionParameters(net);
+		parameters.setShowInfo(false);
+		return runParameters(context, alignments, net, parameters);
+	}
+
 	public EventBasedPrecision runParameters(PluginContext context, PNRepResult alignments, AcceptingPetriNet net, EventBasedPrecisionParameters parameters) throws IllegalTransitionException {
 		return apply(context, alignments, net, parameters);
 	}

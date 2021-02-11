@@ -8,10 +8,12 @@ import org.processmining.models.semantics.petrinet.impl.PetrinetSemanticsFactory
 public class EventBasedPrecisionParameters {
 
 	private PetrinetSemantics semantics;
+	private boolean showInfo;
 
 	public EventBasedPrecisionParameters(AcceptingPetriNet apn) {
 		semantics = PetrinetSemanticsFactory.regularPetrinetSemantics(Petrinet.class);
 		semantics.initialize(apn.getNet().getTransitions(), apn.getInitialMarking());
+		showInfo = true;
 	}
 	
 	public PetrinetSemantics getSemantics() {
@@ -20,5 +22,13 @@ public class EventBasedPrecisionParameters {
 
 	public void setSemantics(PetrinetSemantics semantics) {
 		this.semantics = semantics;
+	}
+
+	public boolean isShowInfo() {
+		return showInfo;
+	}
+
+	public void setShowInfo(boolean showInfo) {
+		this.showInfo = showInfo;
 	}
 }
