@@ -229,6 +229,7 @@ public class EventBasedPrecisionAlgorithm {
 					 */
 					activities.add(transition.getLabel());
 				}
+				transitions.remove(transition);
 			}
 		}
 		if (parameters.isShowInfo()) {
