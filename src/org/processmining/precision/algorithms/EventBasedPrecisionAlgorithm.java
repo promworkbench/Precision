@@ -62,6 +62,9 @@ public class EventBasedPrecisionAlgorithm {
 		for (SyncReplayResult alignment : alignments) {
 			apply(context, alignment, apn, parameters);
 		}
+//		for (List<String> hist : enL.keySet()) {
+//			System.out.println("[EventBasedPrecisionAlgorithm] " + hist + ", enL = " + enL.get(hist) + ", enM = " + enM.get(hist));
+//		}
 		/*
 		 * Second, compute precision based on constructed enL en enM.
 		 */
@@ -97,7 +100,7 @@ public class EventBasedPrecisionAlgorithm {
 			/*
 			 * Make sure history is in enL and enM.
 			 */
-			if (!enL.containsKey(hist)) {
+			if (!enM.containsKey(hist)) {
 				enL.put(new ArrayList<String>(hist), new HashSet<String>());
 				enM.put(new ArrayList<String>(hist), new HashSet<String>());
 			}
@@ -109,11 +112,11 @@ public class EventBasedPrecisionAlgorithm {
 					 * From the current history, the log can do the activity
 					 * associated with this transition.
 					 */
-					enL.get(hist).add(transition.getLabel());
+//					enL.get(hist).add(transition.getLabel());
 					/*
 					 * Find all enabled activities from the current state.
 					 */
-					enM.get(hist).addAll(getEnabledActivities(state, new HashSet<Transition>(), parameters));
+//					enM.get(hist).addAll(getEnabledActivities(state, new HashSet<Transition>(), parameters));
 					/*
 					 * Update state by executing transition.
 					 */
