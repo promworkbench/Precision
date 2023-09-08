@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.deckfour.xes.classification.XEventClass;
 import org.processmining.acceptingpetrinet.models.AcceptingPetriNet;
 import org.processmining.framework.plugin.PluginContext;
 import org.processmining.models.graphbased.directed.petrinet.elements.Transition;
@@ -62,9 +61,6 @@ public class EventBasedPrecisionAlgorithm {
 		for (SyncReplayResult alignment : alignments) {
 			apply(context, alignment, apn, parameters);
 		}
-//		for (List<String> hist : enL.keySet()) {
-//			System.out.println("[EventBasedPrecisionAlgorithm] " + hist + ", enL = " + enL.get(hist) + ", enM = " + enM.get(hist));
-//		}
 		/*
 		 * Second, compute precision based on constructed enL en enM.
 		 */
@@ -77,6 +73,14 @@ public class EventBasedPrecisionAlgorithm {
 		return precision;
 	}
 
+	private void add(List<String> hist, Set<String> enabled) {
+		if (!enM.containsKey(hist)) {
+			enL.put(new ArrayList<String>(hist), new HashSet<String>());
+			enM.put(new ArrayList<String>(hist), new HashSet<String>());
+		}
+		enM.get(hist).addAll(enabled);
+	}
+	
 	/*
 	 * Extend enL en enM with the given alignment.
 	 */
@@ -90,6 +94,7 @@ public class EventBasedPrecisionAlgorithm {
 		 * Current history in alignment. Initially empty.
 		 */
 		List<String> hist = new ArrayList<String>();
+		add(hist, getEnabledActivities(state, new HashSet<Transition>(), parameters));
 
 		for (int i = 0; i < alignment.getStepTypes().size(); i++) {
 			/*
@@ -97,45 +102,17 @@ public class EventBasedPrecisionAlgorithm {
 			 */
 			StepTypes stepType = alignment.getStepTypes().get(i);
 			Object nodeInstance = alignment.getNodeInstance().get(i);
-			/*
-			 * Make sure history is in enL and enM.
-			 */
-			if (!enM.containsKey(hist)) {
-				enL.put(new ArrayList<String>(hist), new HashSet<String>());
-				enM.put(new ArrayList<String>(hist), new HashSet<String>());
-			}
 
 			switch (stepType) {
-				case MREAL : {
-					Transition transition = (Transition) nodeInstance;
-					/*
-					 * From the current history, the log can do the activity
-					 * associated with this transition.
-					 */
-//					enL.get(hist).add(transition.getLabel());
-					/*
-					 * Find all enabled activities from the current state.
-					 */
-//					enM.get(hist).addAll(getEnabledActivities(state, new HashSet<Transition>(), parameters));
-					/*
-					 * Update state by executing transition.
-					 */
-					parameters.getSemantics().setCurrentState(state);
-					parameters.getSemantics().executeExecutableTransition(transition);
-					state = new Marking(parameters.getSemantics().getCurrentState());
-					break;
-				}
+				case MREAL : 
+					// Fall-through
 				case LMGOOD : {
 					Transition transition = (Transition) nodeInstance;
 					/*
-					 * From the current history, the log can do the activity
+					 * From the current history, the (repaired) trace can do the activity
 					 * associated with this transition.
 					 */
 					enL.get(hist).add(transition.getLabel());
-					/*
-					 * Find all enabled activities from the current state.
-					 */
-					enM.get(hist).addAll(getEnabledActivities(state, new HashSet<Transition>(), parameters));
 					/*
 					 * Update state by executing transition.
 					 */
@@ -146,14 +123,11 @@ public class EventBasedPrecisionAlgorithm {
 					 * Update history.
 					 */
 					hist.add(transition.getLabel());
+					add(hist, getEnabledActivities(state, new HashSet<Transition>(), parameters));
 					break;
 				}
 				case MINVI : {
 					Transition transition = (Transition) nodeInstance;
-					/*
-					 * Find all enabled activities from the current state.
-					 */
-					enM.get(hist).addAll(getEnabledActivities(state, new HashSet<Transition>(), parameters));
 					/*
 					 * Update state by executing transition.
 					 */
@@ -163,11 +137,6 @@ public class EventBasedPrecisionAlgorithm {
 					break;
 				}
 				case L : {
-					/*
-					 * Update history.
-					 */
-					XEventClass activity = (XEventClass) nodeInstance;
-					hist.add(activity.getId());
 					break;
 				}
 				default :
@@ -200,8 +169,8 @@ public class EventBasedPrecisionAlgorithm {
 		/*
 		 * Get transitions enabled in current state.
 		 */
-		Set<Transition> executableTransitions = new HashSet<Transition>(parameters.getSemantics()
-				.getExecutableTransitions());
+		Set<Transition> executableTransitions = new HashSet<Transition>(
+				parameters.getSemantics().getExecutableTransitions());
 		/*
 		 * Execute these transitions one after the other.
 		 */
@@ -289,7 +258,8 @@ public class EventBasedPrecisionAlgorithm {
 				 */
 				if (parameters.isShowInfo() && !enL.get(hist).equals(enM.get(hist))) {
 					precision.addInfo("History = " + hist + ", enL = " + enL.get(hist) + ", enM = " + enM.get(hist));
-					precision.addInfo("Number of Events = " + n + ", Accumulated Precision for Events = " + eventPrecision);
+					precision.addInfo(
+							"Number of Events = " + n + ", Accumulated Precision for Events = " + eventPrecision);
 				}
 			}
 
@@ -297,9 +267,8 @@ public class EventBasedPrecisionAlgorithm {
 			 * Update the history.
 			 */
 			switch (stepType) {
-				case MREAL : {
-					break;
-				}
+				case MREAL : 
+					// Fall-through
 				case LMGOOD : {
 					Transition transition = (Transition) nodeInstance;
 					hist.add(transition.getLabel());
@@ -309,8 +278,6 @@ public class EventBasedPrecisionAlgorithm {
 					break;
 				}
 				case L : {
-					XEventClass activity = (XEventClass) nodeInstance;
-					hist.add(activity.getId());
 					break;
 				}
 				default :
